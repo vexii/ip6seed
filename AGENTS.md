@@ -2,51 +2,74 @@
 
 ## Build/Lint/Test Commands
 
-- **Run the project**: `bun run index.ts`
-- **Install dependencies**: `bun install`
-- **Type checking**: `bunx tsc --noEmit` (for type checking only)
-- **Run single test**: No test framework configured yet. Consider adding Vitest with `bun add -d vitest` and create test files.
-- **Fix TypeScript errors**: Current code has BigInt type issues - use consistent `BigInt` vs `bigint` types and handle potential undefined values.
+ - **Run the project**: `bun start` - Runs the example with improved formatted output
+ - **Install dependencies**: `bun install` - Install project dependencies
+ - **Type checking**: `bun run typecheck` - TypeScript type checking only
+ - **Run tests**: `bun test` - Run the comprehensive test suite (18 tests)
+ - **Run single test**: `bun test tests/ipv6-converter.test.ts` - Run specific test file
+ - **Fix TypeScript errors**: Code now uses proper `bigint` types and modern TypeScript features
 
 ## Code Style Guidelines
 
 ### TypeScript Configuration
-- Use strict TypeScript with all strict flags enabled
-- Target ESNext with bundler module resolution
-- Use `verbatimModuleSyntax` and `allowImportingTsExtensions`
-- Enable `noFallthroughCasesInSwitch` and `noUncheckedIndexedAccess`
+- **Strict Mode**: Enabled with all strict flags for maximum type safety
+- **Target**: ESNext with bundler module resolution
+- **Features**: `verbatimModuleSyntax`, `allowImportingTsExtensions`, `noFallthroughCasesInSwitch`, `noUncheckedIndexedAccess`
+
+ ### Project Structure
+ - **Modular Design**: Separated into `src/index.ts`, `src/ipv6.ts`, `src/wordlist.ts`, `src/types.ts`, and `tests/test.test.ts`
+ - **Type Safety**: Comprehensive TypeScript types for all functions and data structures
+ - **Error Handling**: Custom error classes (`IPv6ConversionError`, `InvalidBIP39Error`)
 
 ### Naming Conventions
 - **Variables/Functions**: camelCase (e.g., `ip6ToBigInt`, `generateWords`)
-- **Constants**: camelCase (e.g., `wordlist`, `Sha256`)
-- **Types/Interfaces**: PascalCase (not extensively used in this codebase)
+- **Constants**: UPPER_CASE (e.g., `BIP39_WORDLIST`)
+- **Types/Interfaces**: PascalCase (e.g., `IPv6Address`, `Entropy`)
+- **Files**: kebab-case (e.g., `wordlist.ts`, `types.ts`)
 
 ### Code Structure
-- Use `const` for constants and immutable values
-- Use arrow functions for utility functions and object methods
-- Use `BigInt` for large integer operations
-- Extend global interfaces for utility methods (e.g., `Number.prototype.toHex`)
+- **Functional Programming**: Pure functions with clear inputs/outputs
+- **Immutability**: Use `const` for constants and immutable values
+- **Modern JavaScript**: Arrow functions, template literals, destructuring
+- **BigInt Operations**: Consistent use of `bigint` type for large integers
 
 ### Error Handling
-- Throw descriptive `Error` objects with clear messages
-- Validate inputs early in functions
+- **Custom Errors**: Descriptive error classes with proper inheritance
+- **Input Validation**: Early validation with clear error messages
+- **Type Guards**: Proper type checking for runtime safety
 
 ### Formatting
-- No semicolons (modern JavaScript style)
-- Use template literals for string interpolation
-- Consistent indentation (2 spaces inferred from code)
-- Group related functionality together
+- **No Semicolons**: Modern JavaScript style
+- **Template Literals**: For string interpolation
+- **Indentation**: 2 spaces (consistent throughout)
+- **Line Length**: Reasonable limits for readability
 
 ### Imports and Dependencies
-- Use ES modules with `import`/`export`
-- Check existing codebase before adding new dependencies
-- Prefer built-in JavaScript features over external libraries
+- **ES Modules**: Modern `import`/`export` syntax
+- **Type Imports**: Separate type imports with `import type`
+- **Minimal Dependencies**: Only TypeScript and Bun runtime
+- **No External Libraries**: Self-contained implementation
 
 ### Best Practices
-- Use strict equality (`===`) and inequality (`!==`)
-- Use `const` declarations by default, `let` only when reassignment is needed
-- Use descriptive variable names that explain purpose
-- Keep functions focused on single responsibilities
-- Handle potential undefined values explicitly (current code has TypeScript strict null checks enabled)
-- Use consistent BigInt literal syntax (`BigInt(123)` vs `123n`)
-- Avoid deprecated methods like `unescape()` and `substr()` - use `decodeURIComponent()` and `substring()` instead
+- **Single Responsibility**: Each function has one clear purpose
+- **Descriptive Names**: Variable and function names explain their purpose
+- **Consistent Types**: Use `bigint` consistently for large integers
+- **Modern Methods**: Avoid deprecated methods (`substr`, `unescape`)
+- **Documentation**: JSDoc comments for public functions
+- **Testing**: Comprehensive test coverage for all functionality
+
+ ### File Organization
+ ```
+ src/
+ ├── index.ts          # Entry point with example output
+ ├── ipv6.ts           # Main conversion logic and exports
+ ├── wordlist.ts       # BIP39 wordlist constant
+ └── types.ts          # TypeScript type definitions
+ tests/
+ └── ipv6-converter.test.ts      # Test suite
+ ```
+
+### Performance Considerations
+- **Efficient Algorithms**: Optimized BigInt operations
+- **Minimal Memory Usage**: Streamlined data structures
+- **Fast Runtime**: Bun's performance optimizations

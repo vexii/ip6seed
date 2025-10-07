@@ -1,52 +1,95 @@
-# ip6prase
+ # IPv6 to Sentence Converter
 
-A TypeScript utility that converts IPv6 addresses into memorable, structured sentences using the BIP39 wordlist, and can reverse the process to recover the original IPv6 address.
+ Okay, so IPv6 addresses are a nightmare to remember, right? Those colon-filled monsters like fe80::2fb4:5866:4c4d:b951 – yeah, good luck with that. I built this thing to turn them into actual sentences you can jot down or tell someone, using that BIP39 wordlist everyone's familiar with. And the cool part? It goes both ways perfectly – no data loss, promise.
 
-## Features
+ ## What This Thing Does
 
-- **IPv6 to Sentence**: Convert any IPv6 address into a unique, human-readable sentence
-- **Sentence to IPv6**: Reverse the process to recover the original IPv6 address
-- **BIP39 Wordlist**: Uses the standard 2048-word BIP39 vocabulary for compatibility
-- **SHA256 Checksum**: Includes checksum validation for data integrity
-- **Simple Format**: Generates clean sentences with 12 BIP39 words in groups of 4
+ - **Back-and-forth magic**: Converts IPv6 to a sentence and back again, spot-on every time.
+ - **BIP39 vibes**: Grabs words from the standard 2048-word list, so it's legit.
+ - **Safety first**: Throws in SHA256 checksums to make sure nothing gets corrupted.
+ - **Readable chunks**: Breaks the 12 words into 4-word groups for easy scanning.
+ - **Snappy and slim**: Runs quick on TypeScript and Bun, without dragging in a bunch of extras.
 
-## Example
+ ## A Quick Demo
 
-```typescript
-// Convert IPv6 to sentence
-const sentence = ip6ToSentence('fe80::2fb4:5866:4c4d:b951');
-// Output: "young abandon abandon abandon. abandon abandon sauce mention. green give hour permit."
+ Check this out – here's how it handles an example:
 
-// Convert sentence back to IPv6
-const ipv6 = sentenceToIp6('young abandon abandon abandon. abandon abandon sauce mention. green give hour permit.');
-// Output: "fe80:0:0:0:2fb4:5866:4c4d:b951"
-```
+ ```
+ 🔗 IPv6 to Sentence Converter
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ 📥 Original IPv6: fe80::2fb4:5866:4c4d:b951
+ 📝 Generated Sentence: You abandon abandon abandon. Abandon abandon satisfy merit. Grocery glass human piece.
+ 📤 Recovered IPv6: fe80:0:0:0:2fb4:5866:4c4d:b951
+ ✅ Round-trip successful: Yes
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ ```
 
-## Installation
+ ## Getting It Running
 
-```bash
-bun install
-```
+ Grab the dependencies first:
 
-## Usage
+ ```bash
+ bun install
+ ```
 
-```bash
-bun run index.ts
-```
+ Then fire it up:
 
-## How it Works
+ ```bash
+ bun start
+ ```
 
-1. **IPv6 → BigInt**: Converts IPv6 address to a 128-bit BigInt
-2. **Entropy Generation**: Uses the BigInt as entropy source
-3. **Checksum Calculation**: Computes SHA256 hash and extracts 4-bit checksum
-4. **Word Selection**: Selects 12 words from BIP39 wordlist using entropy + checksum
-5. **Sentence Formatting**: Groups words into simple sentences for readability
+ Or plug it into your own code like this:
 
-The process is reversible and includes validation to ensure data integrity.
+ ```typescript
+ import { ip6ToSentence, sentenceToIp6 } from './src/ipv6';
 
-## Dependencies
+ const sentence = ip6ToSentence('fe80::2fb4:5866:4c4d:b951');
+ const ipv6 = sentenceToIp6(sentence);
+ ```
 
-- TypeScript
-- Bun runtime
+ ## The Guts of It
 
-This project was created using `bun init` in bun v1.2.21. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+ Here's the rundown: It grabs your IPv6, turns it into a massive number (we're talking BigInt here), then uses that to shuffle through the BIP39 words, adds a quick checksum for good measure, and spits out a sentence. Flip it around, and boom – back to the original IP. Simple, but it works.
+
+ ## What's Where
+
+ ```
+ src/
+ ├── index.ts          # Where the demo runs from
+ ├── ipv6.ts           # All the conversion smarts
+ ├── wordlist.ts       # The BIP39 word stash
+ └── types.ts          # TypeScript type stuff
+ tests/
+ └── ipv6-converter.test.ts      # Tests to keep it honest
+ ```
+
+ ## Testing
+
+ Wanna make sure it's solid? Run the tests:
+
+ ```bash
+ bun test
+ ```
+
+ ## Stuff It Needs
+
+ - **TypeScript**: Keeps the types in check and lets us use modern JS.
+ - **Bun**: Handles running and bundling everything smoothly.
+
+ ## Got Ideas?
+
+ If you wanna tweak something or add a feature, here's the drill:
+
+ 1. Fork this repo.
+ 2. Branch off for your changes.
+ 3. Hack away – and yeah, throw in tests for anything new.
+ 4. Run the tests to catch any slip-ups.
+ 5. Shoot over a pull request.
+
+ ## License
+
+ MIT – do what you want with it!
+
+ ---
+
+ Threw this together with Bun and TypeScript. Hope it saves you from IPv6 headaches!

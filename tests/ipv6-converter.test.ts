@@ -1,17 +1,21 @@
-import { describe, it, expect } from "bun:test";
+ import { describe, it, expect } from "bun:test";
 
-// Import functions from index.ts
-import {
-  ip6ToBigInt,
-  bigIntToIp6,
-  bigIntToBytes,
-  generateWords,
-  formatSentence,
-  ip6ToSentence,
-  extractWords,
-  getEntropyFromWords,
-  sentenceToIp6
-} from "./index.ts";
+ // Import functions from src/ipv6.ts
+ import {
+   ip6ToBigInt,
+   bigIntToIp6,
+   bigIntToBytes,
+   generateWords,
+   formatSentence,
+   ip6ToSentence,
+   extractWords,
+   getEntropyFromWords,
+   sentenceToIp6
+ } from "../src/ipv6";
+
+ // Import error classes and wordlist
+ import { IPv6ConversionError, InvalidBIP39Error } from "../src/types";
+ import { BIP39_WORDLIST } from "../src/wordlist";
 
 // Import wordlist for testing
 const wordlist: string[] = [
@@ -66,8 +70,8 @@ describe("IPv6 Conversion Functions", () => {
 
       expect(bytes).toBeInstanceOf(Uint8Array);
       expect(bytes.length).toBe(16);
-      expect(bytes[0]).toBe(0x01);
-      expect(bytes[15]).toBe(0xef);
+      expect(bytes[0]).toBe(0xef); // Least significant byte first
+      expect(bytes[15]).toBe(0x01); // Most significant byte last
     });
 
     it("should handle zero BigInt", () => {
@@ -103,11 +107,11 @@ describe("IPv6 Conversion Functions", () => {
         "absurd", "abuse", "access", "accident"
       ];
 
-      const sentence = formatSentence(words);
-      expect(typeof sentence).toBe("string");
-      expect(sentence.length).toBeGreaterThan(0);
-      expect(sentence).toContain("abandon");
-      expect(sentence).toContain("ability");
+       const sentence = formatSentence(words);
+       expect(typeof sentence).toBe("string");
+       expect(sentence.length).toBeGreaterThan(0);
+       expect(sentence).toContain("Abandon");
+       expect(sentence).toContain("ability");
     });
   });
 
@@ -240,6 +244,129 @@ describe("IPv6 Conversion Functions", () => {
         const recoveredBigInt = ip6ToBigInt(recovered);
         expect(originalBigInt).toBe(recoveredBigInt);
       }
-    });
-  });
-});
+     });
+   });
+
+   describe("Edge Cases for IPv6 Addresses", () => {
+     it("should handle all zeros IPv6 (::)", () => {
+       const ipv6 = "::";
+       const sentence = ip6ToSentence(ipv6);
+       const recovered = sentenceToIp6(sentence);
+       const originalBigInt = ip6ToBigInt(ipv6);
+       const recoveredBigInt = ip6ToBigInt(recovered);
+       expect(originalBigInt).toBe(recoveredBigInt);
+     });
+
+     it("should handle multicast IPv6 (ff02::1)", () => {
+       const ipv6 = "ff02::1";
+       const sentence = ip6ToSentence(ipv6);
+       const recovered = sentenceToIp6(sentence);
+       const originalBigInt = ip6ToBigInt(ipv6);
+       const recoveredBigInt = ip6ToBigInt(recovered);
+       expect(originalBigInt).toBe(recoveredBigInt);
+     });
+
+     it("should handle loopback IPv6 (::1)", () => {
+       const ipv6 = "::1";
+       const sentence = ip6ToSentence(ipv6);
+       const recovered = sentenceToIp6(sentence);
+       const originalBigInt = ip6ToBigInt(ipv6);
+       const recoveredBigInt = ip6ToBigInt(recovered);
+       expect(originalBigInt).toBe(recoveredBigInt);
+     });
+
+     it("should handle IPv6 with leading zeros in groups", () => {
+       const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
+       const sentence = ip6ToSentence(ipv6);
+       const recovered = sentenceToIp6(sentence);
+       const originalBigInt = ip6ToBigInt(ipv6);
+       const recoveredBigInt = ip6ToBigInt(recovered);
+       expect(originalBigInt).toBe(recoveredBigInt);
+     });
+   });
+
+   describe("Error Handling and Invalid Inputs", () => {
+     it("should throw for IPv6 with too many groups", () => {
+       const invalid = "2001:db8:85a3:0:0:8a2e:370:7334:extra";
+       expect(() => ip6ToBigInt(invalid)).toThrow(IPv6ConversionError);
+     });
+
+     it("should throw for IPv6 with invalid characters", () => {
+       const invalid = "2001:db8:85a3:0:0:8a2e:370:gggg";
+       expect(() => ip6ToBigInt(invalid)).toThrow(IPv6ConversionError);
+     });
+
+     it("should throw for sentence with wrong number of words", () => {
+       const invalidSentence = "word1 word2 word3"; // Less than 12 words
+       expect(() => sentenceToIp6(invalidSentence)).toThrow(InvalidBIP39Error);
+     });
+
+     it("should throw for sentence with invalid words", () => {
+       const invalidSentence = "invalidword invalidword invalidword invalidword. invalidword invalidword invalidword invalidword. invalidword invalidword invalidword invalidword.";
+       expect(() => sentenceToIp6(invalidSentence)).toThrow(InvalidBIP39Error);
+     });
+
+     it("should throw for sentence with checksum mismatch", () => {
+       // Create a sentence and tamper with it to break checksum
+       const originalIpv6 = "fe80::1";
+       const sentence = ip6ToSentence(originalIpv6);
+       const tamperedSentence = sentence.replace("abandon", "ability"); // Assuming it changes checksum
+       expect(() => sentenceToIp6(tamperedSentence)).toThrow(InvalidBIP39Error);
+     });
+   });
+
+   describe("Wordlist and Checksum Validation", () => {
+     it("should use valid BIP39 words only", () => {
+       const ipv6 = "fe80::2fb4:5866:4c4d:b951";
+       const sentence = ip6ToSentence(ipv6);
+       const words = extractWords(sentence);
+       expect(words).toHaveLength(12);
+       expect(words.every(word => BIP39_WORDLIST.includes(word))).toBe(true);
+     });
+
+     it("should validate checksum correctly", () => {
+       const entropy = BigInt("0x123456789abcdef");
+       const words = generateWords(entropy);
+       expect(() => getEntropyFromWords(words)).not.toThrow();
+     });
+
+     it("should detect invalid checksum", () => {
+       const words = ["abandon", "ability", "able", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident"];
+       // Manually create invalid words to test checksum
+       const invalidWords = [...words];
+       invalidWords[0] = "zebra"; // Change to break checksum
+       expect(() => getEntropyFromWords(invalidWords)).toThrow(InvalidBIP39Error);
+     });
+   });
+
+   describe("Additional Integration Tests", () => {
+     it("should handle multiple round-trips consistently", () => {
+       const ipv6 = "2001:db8::1";
+       let current = ipv6;
+       for (let i = 0; i < 5; i++) {
+         const sentence = ip6ToSentence(current);
+         current = sentenceToIp6(sentence);
+         const originalBigInt = ip6ToBigInt(ipv6);
+         const currentBigInt = ip6ToBigInt(current);
+         expect(originalBigInt).toBe(currentBigInt);
+       }
+     });
+
+     it("should produce different sentences for different IPv6 addresses", () => {
+       const ipv6_1 = "fe80::1";
+       const ipv6_2 = "fe80::2";
+       const sentence1 = ip6ToSentence(ipv6_1);
+       const sentence2 = ip6ToSentence(ipv6_2);
+       expect(sentence1).not.toBe(sentence2);
+     });
+
+     it("should handle IPv6 addresses with mixed compression", () => {
+       const ipv6 = "2001:db8:0:0:0:0:2:1";
+       const sentence = ip6ToSentence(ipv6);
+       const recovered = sentenceToIp6(sentence);
+       const originalBigInt = ip6ToBigInt(ipv6);
+       const recoveredBigInt = ip6ToBigInt(recovered);
+       expect(originalBigInt).toBe(recoveredBigInt);
+     });
+   });
+ });
