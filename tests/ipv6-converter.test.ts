@@ -63,35 +63,49 @@ describe("IPv6 Conversion Functions", () => {
   });
 
   describe("bigIntToBytes", () => {
-    it("should convert BigInt to 16-byte Uint8Array", () => {
-      const testValue = BigInt("0x0123456789abcdef0123456789abcdef");
-      const bytes = bigIntToBytes(testValue);
+      it("should convert BigInt to 16-byte Uint8Array", () => {
+        const testValue = BigInt("0x0123456789abcdef0123456789abcdef");
+        const bytes = bigIntToBytes(testValue);
 
-      expect(bytes).toBeInstanceOf(Uint8Array);
-      expect(bytes.length).toBe(16);
-      expect(bytes[0]).toBe(0xef); // Least significant byte first
-      expect(bytes[15]).toBe(0x01); // Most significant byte last
-    });
+        expect(bytes).toBeInstanceOf(Uint8Array);
+        expect(bytes.length).toBe(16);
+        expect(bytes[0]).toBe(0x01); // Most significant byte first
+        expect(bytes[15]).toBe(0xef); // Least significant byte last
+      });
 
     it("should handle zero BigInt", () => {
       const bytes = bigIntToBytes(BigInt(0));
       expect(bytes.every((byte: number) => byte === 0)).toBe(true);
     });
+
+    it("should handle maximum BigInt", () => {
+      const maxBigInt = (BigInt(1) << 128n) - 1n;
+      const bytes = bigIntToBytes(maxBigInt);
+      expect(bytes.length).toBe(16);
+      expect(bytes.every((byte: number) => byte === 0xff)).toBe(true);
+    });
   });
 
   describe("generateWords", () => {
-    it("should generate 12 words from entropy", () => {
-      const entropy = BigInt("0x123456789abcdef");
-      const words = generateWords(entropy);
+     it("should generate 12 words from entropy", () => {
+       const entropy = BigInt("0x0123456789abcdef0123456789abcdef");
+       const words = generateWords(entropy);
 
       expect(words).toHaveLength(12);
       expect(words.every((word: string) => typeof word === "string")).toBe(true);
       expect(words.every((word: string) => word.length > 0)).toBe(true);
     });
 
-    it("should generate consistent words for same entropy", () => {
-      const entropy = BigInt("0x123456789abcdef");
-      const words1 = generateWords(entropy);
+    it("should generate words for zero entropy", () => {
+      const entropy = BigInt(0);
+      const words = generateWords(entropy);
+      expect(words).toHaveLength(12);
+      expect(words.every((word: string) => BIP39_WORDLIST.includes(word))).toBe(true);
+    });
+
+     it("should generate consistent words for same entropy", () => {
+       const entropy = BigInt("0x0123456789abcdef0123456789abcdef");
+       const words1 = generateWords(entropy);
       const words2 = generateWords(entropy);
 
       expect(words1).toEqual(words2);
@@ -99,7 +113,7 @@ describe("IPv6 Conversion Functions", () => {
   });
 
   describe("formatSentence", () => {
-    it("should format 12 words into a sentence", () => {
+     it("should format 12 words into a sentence", () => {
       const words = [
         "abandon", "ability", "able", "about",
         "above", "absent", "absorb", "abstract",
@@ -109,8 +123,7 @@ describe("IPv6 Conversion Functions", () => {
        const sentence = formatSentence(words);
        expect(typeof sentence).toBe("string");
        expect(sentence.length).toBeGreaterThan(0);
-       expect(sentence).toContain("Abandon");
-       expect(sentence).toContain("ability");
+       expect(sentence).toBe("abandon ability able about above absent absorb abstract absurd abuse access accident");
     });
   });
 
@@ -147,16 +160,16 @@ describe("IPv6 Conversion Functions", () => {
   });
 
   describe("getEntropyFromWords", () => {
-    it("should validate and extract entropy from words", () => {
-      const validEntropy = BigInt("0x123456789abcdef");
-      const validWords = generateWords(validEntropy);
+     it("should validate and extract entropy from words", () => {
+       const validEntropy = BigInt("0x0123456789abcdef0123456789abcdef");
+       const validWords = generateWords(validEntropy);
 
       expect(() => getEntropyFromWords(validWords)).not.toThrow();
     });
 
-    it("should validate checksum", () => {
-      const validEntropy = BigInt("0x123456789abcdef");
-      const validWords = generateWords(validEntropy);
+     it("should validate checksum", () => {
+       const validEntropy = BigInt("0x0123456789abcdef0123456789abcdef");
+       const validWords = generateWords(validEntropy);
 
       expect(() => getEntropyFromWords(validWords)).not.toThrow();
     });
@@ -274,14 +287,113 @@ describe("IPv6 Conversion Functions", () => {
        expect(originalBigInt).toBe(recoveredBigInt);
      });
 
-     it("should handle IPv6 with leading zeros in groups", () => {
-       const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
-       const sentence = ip6ToSentence(ipv6);
-       const recovered = sentenceToIp6(sentence);
-       const originalBigInt = ip6ToBigInt(ipv6);
-       const recoveredBigInt = ip6ToBigInt(recovered);
-       expect(originalBigInt).toBe(recoveredBigInt);
-     });
+      it("should handle IPv6 with leading zeros in groups", () => {
+        const ipv6 = "2001:0db8:85a3:0000:0000:8a2e:0370:7334";
+        const sentence = ip6ToSentence(ipv6);
+        const recovered = sentenceToIp6(sentence);
+        const originalBigInt = ip6ToBigInt(ipv6);
+        const recoveredBigInt = ip6ToBigInt(recovered);
+        expect(originalBigInt).toBe(recoveredBigInt);
+      });
+
+      it("should handle all ones IPv6 (ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff)", () => {
+        const ipv6 = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff";
+        const sentence = ip6ToSentence(ipv6);
+        const recovered = sentenceToIp6(sentence);
+        const originalBigInt = ip6ToBigInt(ipv6);
+        const recoveredBigInt = ip6ToBigInt(recovered);
+        expect(originalBigInt).toBe(recoveredBigInt);
+      });
+
+      it("should handle IPv6 with mixed case", () => {
+        const ipv6 = "2001:DB8:85A3:0:0:8A2E:370:7334";
+        const sentence = ip6ToSentence(ipv6);
+        const recovered = sentenceToIp6(sentence);
+        const originalBigInt = ip6ToBigInt(ipv6);
+        const recoveredBigInt = ip6ToBigInt(recovered);
+        expect(originalBigInt).toBe(recoveredBigInt);
+      });
+
+      it("should handle IPv6 with specific bit pattern for debugging", () => {
+        const ipv6 = "1234:5678:9abc:def0:1234:5678:9abc:def0";
+        const sentence = ip6ToSentence(ipv6);
+        const recovered = sentenceToIp6(sentence);
+        const originalBigInt = ip6ToBigInt(ipv6);
+        const recoveredBigInt = ip6ToBigInt(recovered);
+        expect(originalBigInt).toBe(recoveredBigInt);
+      });
+
+      it("should handle entropy with all bits set for checksum debugging", () => {
+        const entropy = (BigInt(1) << 128n) - 1n;
+        const words = generateWords(entropy);
+        expect(words).toHaveLength(12);
+        expect(() => getEntropyFromWords(words)).not.toThrow();
+        const recoveredEntropy = getEntropyFromWords(words);
+        expect(recoveredEntropy).toBe(entropy);
+      });
+
+      it("should handle entropy with zero for checksum debugging", () => {
+        const entropy = BigInt(0);
+        const words = generateWords(entropy);
+        expect(words).toHaveLength(12);
+        expect(() => getEntropyFromWords(words)).not.toThrow();
+        const recoveredEntropy = getEntropyFromWords(words);
+        expect(recoveredEntropy).toBe(entropy);
+      });
+
+      it("should handle entropy with single bit set for debugging", () => {
+        const entropy = BigInt(1) << 64n;
+        const words = generateWords(entropy);
+        expect(words).toHaveLength(12);
+        expect(() => getEntropyFromWords(words)).not.toThrow();
+        const recoveredEntropy = getEntropyFromWords(words);
+        expect(recoveredEntropy).toBe(entropy);
+      });
+
+      it("should throw for invalid BIP39 word in getEntropyFromWords", () => {
+        const invalidWords = ["abandon", "ability", "invalidword"];
+        expect(() => getEntropyFromWords(invalidWords)).toThrow("Invalid word");
+      });
+
+      it("should handle words with checksum mismatch for debugging", () => {
+        const entropy = BigInt("0x0123456789abcdef0123456789abcdef");
+        const words = generateWords(entropy);
+        // Corrupt the last word to cause checksum mismatch
+        const corruptedWords = [...words];
+        corruptedWords[11] = "abandon"; // Change last word
+        expect(() => getEntropyFromWords(corruptedWords)).toThrow("Checksum invalid");
+      });
+
+      it("should handle entropy that causes index near wordlist boundary", () => {
+        // Entropy that might cause index close to 2047
+        const entropy = BigInt("0x7fffffffffffffffffffffffffffffff");
+        const words = generateWords(entropy);
+        expect(words).toHaveLength(12);
+        expect(() => getEntropyFromWords(words)).not.toThrow();
+        const recoveredEntropy = getEntropyFromWords(words);
+        expect(recoveredEntropy).toBe(entropy);
+      });
+
+      it("should handle sentence with extra spaces for robustness", () => {
+        const ipv6 = "fe80::1";
+        const sentence = ip6ToSentence(ipv6);
+        const sentenceWithSpaces = `  ${sentence}  `;
+        const words = extractWords(sentenceWithSpaces);
+        expect(words).toHaveLength(12);
+        expect(() => getEntropyFromWords(words)).not.toThrow();
+        const recovered = sentenceToIp6(sentenceWithSpaces);
+        expect(ip6ToBigInt(ipv6)).toBe(ip6ToBigInt(recovered));
+      });
+
+      it("should handle words that are substrings of others for extraction", () => {
+        // Test if words like "a" vs "abandon" cause issues, but since we use exact match, should be fine
+        const entropy = BigInt("0x00000000000000000000000000000001");
+        const words = generateWords(entropy);
+        expect(words).toHaveLength(12);
+        const sentence = formatSentence(words);
+        const extracted = extractWords(sentence);
+        expect(extracted).toEqual(words);
+      });
    });
 
    describe("Error Handling and Invalid Inputs", () => {
@@ -323,9 +435,9 @@ describe("IPv6 Conversion Functions", () => {
        expect(words.every(word => BIP39_WORDLIST.includes(word))).toBe(true);
      });
 
-     it("should validate checksum correctly", () => {
-       const entropy = BigInt("0x123456789abcdef");
-       const words = generateWords(entropy);
+      it("should validate checksum correctly", () => {
+        const entropy = BigInt("0x0123456789abcdef0123456789abcdef");
+        const words = generateWords(entropy);
        expect(() => getEntropyFromWords(words)).not.toThrow();
      });
 

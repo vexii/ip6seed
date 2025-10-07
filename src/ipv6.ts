@@ -1,15 +1,51 @@
   import { BIP39_WORDLIST } from './wordlist';
   import type { IPv6Address, Sentence, ByteArray } from './types';
 
- /**
-  * Simple SHA256 hash function for BIP39 checksum calculation
-  * @param message - The string message to hash
-  * @returns The SHA256 hash as a hexadecimal string
-  */
-  function sha256Hash(message: string): string {
+  /**
+   * Simple SHA256 hash function for BIP39 checksum calculation
+   * @param bytes - The byte array to hash
+   * @returns The SHA256 hash as a hexadecimal string
+   */
+  function sha256Hash(bytes: Uint8Array): string {
     // Use Node.js crypto for SHA256
     const { createHash } = require('crypto');
-    return createHash('sha256').update(message, 'utf8').digest('hex');
+    return createHash('sha256').update(bytes).digest('hex');
+  }
+
+  /**
+   * Validates that entropy is exactly 128 bits (16 bytes)
+   * @param entropy - The BigInt entropy value
+   * @throws {Error} If entropy is not 128 bits
+   */
+  function validateEntropy(entropy: bigint): void {
+    const bitLength = entropy.toString(2).length;
+    if (bitLength > 128) {
+      throw new Error(`Entropy too large: ${bitLength} bits, expected <= 128 bits`);
+    }
+  }
+
+  /**
+   * Calculates BIP39 checksum for entropy
+   * @param entropyBytes - The entropy as byte array
+   * @returns The 4-bit checksum
+   */
+  function calculateChecksum(entropyBytes: Uint8Array): number {
+    const hashHex = sha256Hash(entropyBytes);
+    const firstByte = parseInt(hashHex.substring(0, 2), 16);
+    return firstByte & 0xf;
+  }
+
+  /**
+   * Converts byte array back to BigInt in big-endian order
+   * @param bytes - The byte array
+   * @returns The BigInt value
+   */
+  function bytesToBigInt(bytes: Uint8Array): bigint {
+    let result = BigInt(0);
+    for (let i = 0; i < bytes.length; i++) {
+      result = (result << 8n) | BigInt(bytes[i]);
+    }
+    return result;
   }
 
  declare global {
@@ -62,67 +98,63 @@
     return groups.join(':');
   }
 
- /**
-  * Converts BigInt to 16-byte Uint8Array
-  * @param big - The BigInt value to convert
-  * @returns A Uint8Array of 16 bytes representing the BigInt
-  */
+  /**
+   * Converts BigInt to 16-byte Uint8Array in big-endian order
+   * @param big - The BigInt value to convert
+   * @returns A Uint8Array of 16 bytes representing the BigInt
+   */
   function bigIntToBytes(big: bigint): ByteArray {
-    return new Uint8Array(Array.from({ length: 16 }, () => {
-      const byte = Number(big & 0xffn);
-      big >>= 8n;
-      return byte;
-    }));
-  }
+     const arr = Array.from({ length: 16 }, () => {
+       const byte = Number(big & 0xffn);
+       big >>= 8n;
+       return byte;
+     });
+     return new Uint8Array(arr.reverse());
+   }
 
  /**
   * Generates 12 BIP39 words from entropy with checksum validation
   * @param entropy - The BigInt entropy value
   * @returns An array of 12 BIP39 words
   */
- function generateWords(entropy: bigint): string[] {
-   const entropyBytes = bigIntToBytes(entropy);
-   const msg = String.fromCharCode(...entropyBytes);
-   const hashHex = sha256Hash(msg);
-   const firstByte = parseInt(hashHex.substring(0, 2), 16);
-   const checksum = firstByte >> 4;
-   let entropyWithChecksum = (entropy << 4n) | BigInt(checksum);
-    const words: string[] = [];
-    for (let i = 0; i < 12; i++) {
-      const index = Number(entropyWithChecksum & 0x7ffn);
-      words.push(BIP39_WORDLIST[index as number]!);
-      entropyWithChecksum >>= 11n;
-    }
-    return words;
- }
+  function generateWords(entropy: bigint): string[] {
+    const entropyBytes = bigIntToBytes(entropy);
+    const hashHex = sha256Hash(entropyBytes);
+    const firstByte = parseInt(hashHex.substring(0, 2), 16);
+    const checksum = firstByte & 0xf;
+    let entropyWithChecksum = (entropy << 4n) | BigInt(checksum);
+     const words: string[] = [];
+     for (let i = 0; i < 12; i++) {
+       const index = Number(entropyWithChecksum & 0x7ffn);
+       const word = BIP39_WORDLIST[index];
+       if (!word) {
+         throw new Error(`Invalid BIP39 index: ${index}`);
+       }
+       words.push(word);
+       entropyWithChecksum >>= 11n;
+     }
+     return words.reverse();
+  }
+       words.push(word);
+       entropyWithChecksum >>= 11n;
+     }
+     return words.reverse();
+  }
+     return words.reverse();
+  }
 
  // Helper function to capitalize the first letter
  const capitalize = (str: string): string => (str && str.length > 0) ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 
- /**
-  * Formats BIP39 words into a readable sentence
-  * @param words - Array of 12 BIP39 words
-  * @returns A formatted sentence string
-  */
- function formatSentence(words: string[]): Sentence {
-   // Create a more natural sentence using the 12 BIP39 words in order
-   // Add connector words for better flow while preserving reversibility
-   const w1 = capitalize(words[0]!);
-   const w2 = words[1]!;
-   const w3 = words[2]!;
-   const w4 = words[3]!;
-   const w5 = words[4]!;
-   const w6 = words[5]!;
-   const w7 = words[6]!;
-   const w8 = words[7]!;
-   const w9 = words[8]!;
-   const w10 = words[9]!;
-   const w11 = words[10]!;
-   const w12 = words[11]!;
-
-   // Build a narrative sentence with connectors
-   return `${w1} ${w2} the forgotten path, ${w3} old doubts, and ${w4} hidden treasures. ${capitalize(w5)} ${w6} and ${w7} with ${w8}, ${w9}, ${w10}, and ${w11} ${w12}.`;
- }
+  /**
+   * Formats BIP39 words into a readable sentence
+   * @param words - Array of 12 BIP39 words
+   * @returns A formatted sentence string
+   */
+  function formatSentence(words: string[]): Sentence {
+    // Join the 12 BIP39 words with spaces for a simple sentence
+    return words.join(' ');
+  }
 
  /**
   * Converts IPv6 address to a memorable sentence
@@ -137,30 +169,14 @@
     return formatSentence(words);
   }
 
- /**
-  * Extracts BIP39 words from a formatted sentence
-  * @param sentence - The formatted sentence string
-  * @returns An array of extracted BIP39 words
-  */
- function extractWords(sentence: Sentence): string[] {
-    const allWords = sentence.replace(/\./g, '').trim().split(/\s+/).map(word => word.replace(/[^a-z]/gi, '').toLowerCase());
-    const bip39Words = allWords
-      .filter(word => word) // Skip empty strings after cleaning
-      .map(word => {
-        // Check if word is directly in wordlist
-        if (BIP39_WORDLIST.includes(word)) {
-          return word;
-        }
-        // Check if word without 's' suffix is in wordlist (for verbs)
-        if (word.endsWith('s') && BIP39_WORDLIST.includes(word.slice(0, -1))) {
-          return word.slice(0, -1);
-        }
-        return null;
-      })
-      .filter(word => word !== null) as string[];
-
-    return bip39Words.slice(0, 12);
- }
+  /**
+   * Extracts BIP39 words from a formatted sentence
+   * @param sentence - The formatted sentence string
+   * @returns An array of extracted BIP39 words
+   */
+  function extractWords(sentence: Sentence): string[] {
+     return sentence.trim().split(/\s+/).map(word => word.toLowerCase()).slice(0, 12);
+  }
 
  /**
   * Validates BIP39 words and extracts entropy with checksum verification
@@ -175,14 +191,13 @@
       if (index === -1) throw new Error('Invalid word');
       return (acc << 11n) | BigInt(index);
     }, 0n);
-    const checksum = Number(bitString & 0xfn);
-    const entropy = bitString >> 4n;
-    const entropyBytes = bigIntToBytes(entropy);
-    const msg = String.fromCharCode(...entropyBytes);
-    const hashHex = sha256Hash(msg);
-    const computedChecksum = parseInt(hashHex.substring(0, 2), 16) >> 4;
-    if (checksum !== computedChecksum) throw new Error('Checksum invalid');
-    return entropy;
+     const checksum = Number(bitString & 0xfn);
+     const entropy = bitString >> 4n;
+     const entropyBytes = bigIntToBytes(entropy);
+    const hashHex = sha256Hash(entropyBytes);
+    const computedChecksum = parseInt(hashHex.substring(0, 2), 16) & 0xf;
+     if (checksum !== computedChecksum) throw new Error('Checksum invalid');
+     return entropy;
   }
 
  /**
