@@ -4,13 +4,10 @@
   * Generates a random IPv6 address for demonstration
   * @returns A random IPv6 address string
   */
- function generateRandomIPv6(): string {
-   const groups: string[] = [];
-   for (let i = 0; i < 8; i++) {
-     groups.push(Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'));
-   }
-   return groups.join(':');
- }
+  function generateRandomIPv6(): string {
+    const groups = Array.from({ length: 8 }, () => Math.floor(Math.random() * 65536).toString(16).padStart(4, '0'));
+    return groups.join(':');
+  }
 
  // Example usage with improved formatting and multiple examples
  const examples = [

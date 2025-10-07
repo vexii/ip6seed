@@ -27,22 +27,4 @@
   */
  export type ByteArray = Uint8Array;
 
- /**
-  * Error class for IPv6 conversion errors
-  */
- export class IPv6ConversionError extends Error {
-   constructor(message: string) {
-     super(message);
-     this.name = 'IPv6ConversionError';
-   }
- }
-
- /**
-  * Error class for invalid BIP39 words
-  */
- export class InvalidBIP39Error extends Error {
-   constructor(message: string) {
-     super(message);
-     this.name = 'InvalidBIP39Error';
-   }
- }
+// Error types are now plain Error objects
