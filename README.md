@@ -8,18 +8,18 @@ A TypeScript utility that converts IPv6 addresses into memorable, structured sen
 - **Sentence to IPv6**: Reverse the process to recover the original IPv6 address
 - **BIP39 Wordlist**: Uses the standard 2048-word BIP39 vocabulary for compatibility
 - **SHA256 Checksum**: Includes checksum validation for data integrity
-- **Structured Format**: Generates sentences in groups of 4 phrases with 4 words each
+- **Simple Format**: Generates clean sentences with 12 BIP39 words in groups of 4
 
 ## Example
 
 ```typescript
 // Convert IPv6 to sentence
 const sentence = ip6ToSentence('fe80::2fb4:5866:4c4d:b951');
-// Output: "The abandon young abandons the abandon. A abandon abandon that sauces mention, while Green hours with give permit."
+// Output: "young abandon abandon abandon. abandon abandon sauce mention. green give hour permit."
 
 // Convert sentence back to IPv6
-const ipv6 = sentenceToIp6('The abandon young abandons the abandon. A abandon abandon that sauces mention, while Green hours with give permit.');
-// Output: "fe80::2fb4:5866:4c4d:b951"
+const ipv6 = sentenceToIp6('young abandon abandon abandon. abandon abandon sauce mention. green give hour permit.');
+// Output: "fe80:0:0:0:2fb4:5866:4c4d:b951"
 ```
 
 ## Installation
@@ -40,7 +40,7 @@ bun run index.ts
 2. **Entropy Generation**: Uses the BigInt as entropy source
 3. **Checksum Calculation**: Computes SHA256 hash and extracts 4-bit checksum
 4. **Word Selection**: Selects 12 words from BIP39 wordlist using entropy + checksum
-5. **Sentence Formatting**: Structures words into readable 4-phrase sentences
+5. **Sentence Formatting**: Groups words into simple sentences for readability
 
 The process is reversible and includes validation to ensure data integrity.
 

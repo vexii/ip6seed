@@ -114,7 +114,8 @@ const ip6ToBigInt = (ip: string): BigInt => {
   if (groups.length !== 8) throw new Error('Invalid IPv6');
   let num = BigInt(0);
   for (const g of groups) {
-    num = (num << BigInt(16)) | BigInt(parseInt(g || '0', 16));
+    if (!/^[0-9a-f]{1,4}$/.test(g)) throw new Error('Invalid IPv6');
+    num = (num << BigInt(16)) | BigInt(parseInt(g, 16));
   }
   return num;
 };
@@ -159,53 +160,17 @@ const generateWords = (entropy: BigInt): string[] => {
 
 // Function to format words into structured sentence
 const formatSentence = (words: string[]): string => {
-  const templates: ((subject: string, adjective: string, verb: string, object: string) => string)[] = [
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `The ${adjective} ${subject} ${verb}s the ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `A ${adjective} ${subject} that ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `${capitalize(subject)} ${verb}s with ${adjective} ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `In the ${adjective} ${subject}, ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `Through ${adjective} ${subject}, ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `${capitalize(subject)} is ${adjective} and ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `Beneath the ${adjective} ${subject}, ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `Across the ${adjective} ${subject}, ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `${capitalize(subject)} ${verb}s ${adjective} ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `Within the ${adjective} ${subject}, ${verb}s ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `${capitalize(subject)} seeks ${adjective} ${object}`,
-    (subject: string, adjective: string, verb: string, object: string) =>
-      `The ${adjective} ${subject} finds ${object}`
-  ];
-
-  const connectors = ['. ', ', while ', ', and ', ', yet ', '. Meanwhile, ', '. Still, '];
-
+  // Use words in their original order, just format them into a simple sentence
+  // This preserves the order for round-trip conversion
   const phrases: string[] = [];
   for (let i = 0; i < 12; i += 4) {
-    const subject = words[i];
-    const adjective = words[i + 1];
-    const verb = words[i + 2];
-    const object = words[i + 3];
-    const templateIndex = Math.floor(i / 4) % templates.length;
-    const phrase = templates[templateIndex](subject, adjective, verb, object);
-
-    // Add connector for all but the last phrase
-    if (i < 8) {
-      const connectorIndex = Math.floor(i / 4) % connectors.length;
-      phrases.push(phrase + connectors[connectorIndex]);
-    } else {
-      phrases.push(phrase + '.');
-    }
+    const w1 = words[i];
+    const w2 = words[i + 1];
+    const w3 = words[i + 2];
+    const w4 = words[i + 3];
+    phrases.push(`${w1} ${w2} ${w3} ${w4}`);
   }
-  return phrases.join('');
+  return phrases.join('. ') + '.';
 };
 
 // Function to convert IPv6 to unique sentence
@@ -217,7 +182,21 @@ const ip6ToSentence = (ip: string): string => {
 
 // Function to extract words from sentence
 const extractWords = (sentence: string): string[] => {
-  return sentence.replace(/\./g, '').trim().split(/\s+/).map(word => word.toLowerCase());
+  const allWords = sentence.replace(/\./g, '').trim().split(/\s+/).map(word => word.toLowerCase());
+  const bip39Words: string[] = [];
+
+  for (const word of allWords) {
+    // Check if word is directly in wordlist
+    if (wordlist.includes(word)) {
+      bip39Words.push(word);
+    }
+    // Check if word without 's' suffix is in wordlist (for verbs)
+    else if (word.endsWith('s') && wordlist.includes(word.slice(0, -1))) {
+      bip39Words.push(word.slice(0, -1));
+    }
+  }
+
+  return bip39Words;
 };
 
 // Function to validate and get entropy from words
