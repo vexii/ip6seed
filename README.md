@@ -222,6 +222,7 @@ Please ensure all tests pass and follow the existing code style (2-space indenta
 
 ## Changelog
 
+- **v1.1.0**: Enhanced README with badges, examples, and better structure; fixed code issues and updated BIP39 wordlist for full compliance.
 - **v1.0.0**: Initial release with full IPv6 to BIP39 conversion, comprehensive tests, and zero dependencies.
 
 ## License
