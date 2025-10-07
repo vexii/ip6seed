@@ -159,15 +159,53 @@ const generateWords = (entropy: BigInt): string[] => {
 
 // Function to format words into structured sentence
 const formatSentence = (words: string[]): string => {
+  const templates: ((subject: string, adjective: string, verb: string, object: string) => string)[] = [
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `The ${adjective} ${subject} ${verb}s the ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `A ${adjective} ${subject} that ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `${capitalize(subject)} ${verb}s with ${adjective} ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `In the ${adjective} ${subject}, ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `Through ${adjective} ${subject}, ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `${capitalize(subject)} is ${adjective} and ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `Beneath the ${adjective} ${subject}, ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `Across the ${adjective} ${subject}, ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `${capitalize(subject)} ${verb}s ${adjective} ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `Within the ${adjective} ${subject}, ${verb}s ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `${capitalize(subject)} seeks ${adjective} ${object}`,
+    (subject: string, adjective: string, verb: string, object: string) =>
+      `The ${adjective} ${subject} finds ${object}`
+  ];
+
+  const connectors = ['. ', ', while ', ', and ', ', yet ', '. Meanwhile, ', '. Still, '];
+
   const phrases: string[] = [];
   for (let i = 0; i < 12; i += 4) {
-    const subject = capitalize(words[i]);
+    const subject = words[i];
     const adjective = words[i + 1];
     const verb = words[i + 2];
     const object = words[i + 3];
-    phrases.push(`${subject} ${adjective} ${verb} ${object}.`);
+    const templateIndex = Math.floor(i / 4) % templates.length;
+    const phrase = templates[templateIndex](subject, adjective, verb, object);
+
+    // Add connector for all but the last phrase
+    if (i < 8) {
+      const connectorIndex = Math.floor(i / 4) % connectors.length;
+      phrases.push(phrase + connectors[connectorIndex]);
+    } else {
+      phrases.push(phrase + '.');
+    }
   }
-  return phrases.join(' ');
+  return phrases.join('');
 };
 
 // Function to convert IPv6 to unique sentence
@@ -211,3 +249,16 @@ const sentenceToIp6 = (sentence: string): string => {
 // Example usage
 console.log(ip6ToSentence('fe80::2fb4:5866:4c4d:b951'));
 console.log(sentenceToIp6('Young abandon abandon abandon. Abandon abandon sauce mention. Green give hour permit.'));
+
+// Export functions for testing
+export {
+  ip6ToBigInt,
+  bigIntToIp6,
+  bigIntToBytes,
+  generateWords,
+  formatSentence,
+  ip6ToSentence,
+  extractWords,
+  getEntropyFromWords,
+  sentenceToIp6
+};

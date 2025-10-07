@@ -15,10 +15,10 @@ A TypeScript utility that converts IPv6 addresses into memorable, structured sen
 ```typescript
 // Convert IPv6 to sentence
 const sentence = ip6ToSentence('fe80::2fb4:5866:4c4d:b951');
-// Output: "Young abandon abandon abandon. Abandon abandon sauce mention. Green give hour permit."
+// Output: "The abandon young abandons the abandon. A abandon abandon that sauces mention, while Green hours with give permit."
 
 // Convert sentence back to IPv6
-const ipv6 = sentenceToIp6('Young abandon abandon abandon. Abandon abandon sauce mention. Green give hour permit.');
+const ipv6 = sentenceToIp6('The abandon young abandons the abandon. A abandon abandon that sauces mention, while Green hours with give permit.');
 // Output: "fe80::2fb4:5866:4c4d:b951"
 ```
 
