@@ -350,10 +350,10 @@ describe("IPv6 Conversion Functions", () => {
         expect(recoveredEntropy).toBe(entropy);
       });
 
-      it("should throw for invalid BIP39 word in getEntropyFromWords", () => {
-        const invalidWords = ["abandon", "ability", "invalidword"];
-        expect(() => getEntropyFromWords(invalidWords)).toThrow("Invalid word");
-      });
+       it("should throw for invalid BIP39 word in getEntropyFromWords", () => {
+         const invalidWords = ["abandon", "ability", "invalidword", "about", "above", "absent", "absorb", "abstract", "absurd", "abuse", "access", "accident"];
+         expect(() => getEntropyFromWords(invalidWords)).toThrow("Invalid word");
+       });
 
       it("should handle words with checksum mismatch for debugging", () => {
         const entropy = BigInt("0x0123456789abcdef0123456789abcdef");

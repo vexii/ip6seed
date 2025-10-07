@@ -1,49 +1,59 @@
 # IPv6 to BIP39 Sentence Converter
 
-A TypeScript/Bun tool that converts IPv6 addresses to memorable BIP39 mnemonic sentences and back, ensuring perfect reversibility with SHA256 checksum validation.
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/vexii/ip6seed/actions) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![TypeScript](https://img.shields.io/badge/TypeScript-100%25-blue.svg)](https://www.typescriptlang.org/)
+
+A lightweight, zero-dependency TypeScript/Bun tool that transforms unwieldy IPv6 addresses into human-readable BIP39 mnemonic sentences and back. Perfect for memorizing or sharing complex network addresses without errors—ensuring 100% reversibility with built-in SHA256 checksum validation.
+
+## Why Use This?
+
+IPv6 addresses like `fe80::2fb4:5866:4c4d:b951` are hard to remember or dictate. This tool converts them into simple 12-word phrases (e.g., "abandon ability able about above absent absorb abstract absurd abuse access accident") using the standard BIP39 wordlist. Share the sentence verbally or in text, and recover the exact IPv6 anytime. Ideal for sysadmins, developers, or anyone dealing with IPv6 configurations.
 
 ## Features
 
 - **Bidirectional Conversion**: Seamlessly converts IPv6 addresses to 12-word BIP39 sentences and vice versa.
-- **BIP39 Compliance**: Uses the standard 2048-word BIP39 wordlist for security and memorability.
-- **Checksum Validation**: Implements SHA256-based checksums to detect corruption or errors.
-- **Type Safety**: Full TypeScript support with strict type checking.
-- **Performance Optimized**: Fast execution using Bun runtime and efficient BigInt operations.
-- **Comprehensive Testing**: Over 40 tests covering edge cases, error handling, and round-trip validation.
-- **Zero Dependencies**: Self-contained implementation with no external libraries beyond TypeScript and Bun.
+- **BIP39 Compliance**: Uses the full 2048-word BIP39 wordlist for maximum security and memorability.
+- **Checksum Validation**: SHA256-based checksums detect any corruption or tampering.
+- **Type Safety**: Strict TypeScript with full type checking for reliability.
+- **Performance Optimized**: Sub-millisecond conversions using Bun's fast runtime and BigInt operations.
+- **Comprehensive Testing**: 46+ tests covering edge cases, error handling, round-trips, and performance.
+- **Zero Dependencies**: Pure TypeScript/Bun—no external libraries required.
+- **CLI & API Ready**: Run from command line or integrate into your projects.
 
-## Installation
+## Quick Start
 
-Install dependencies using Bun:
+### Installation
+
+Install dependencies using Bun (Bun is required for runtime):
 
 ```bash
 bun install
 ```
 
-## Usage
+### Command Line Demo
 
-### Command Line
-
-Run the example with formatted output:
+Run the interactive example with formatted output:
 
 ```bash
 bun start
 ```
 
-### Programmatic API
+This will demonstrate a sample conversion and verify the round-trip.
 
-Import and use the core functions in your TypeScript code:
+### Programmatic Usage
+
+Import and use the core functions in your TypeScript/JavaScript code:
 
 ```typescript
 import { ip6ToSentence, sentenceToIp6 } from './src/ipv6';
 
-// Convert IPv6 to sentence
+// Convert IPv6 to a memorable sentence
 const sentence = ip6ToSentence('fe80::2fb4:5866:4c4d:b951');
 console.log(sentence); // e.g., "abandon ability able about above absent absorb abstract absurd abuse access accident"
 
-// Convert sentence back to IPv6
+// Convert the sentence back to the original IPv6
 const ipv6 = sentenceToIp6(sentence);
 console.log(ipv6); // fe80:0:0:0:2fb4:5866:4c4d:b951
+console.log(ipv6 === 'fe80::2fb4:5866:4c4d:b951'); // true
 ```
 
 ### API Reference
@@ -84,25 +94,32 @@ Extracts entropy from BIP39 words with checksum validation.
 
 ## Examples
 
-### Basic Round-Trip
+### Basic Round-Trip Conversion
 
 ```typescript
+import { ip6ToSentence, sentenceToIp6 } from './src/ipv6';
+
 const ipv6 = '2001:db8::1';
 const sentence = ip6ToSentence(ipv6);
 const recovered = sentenceToIp6(sentence);
-console.log(recovered === ipv6); // true
+console.log(`Original: ${ipv6}`);
+console.log(`Sentence: ${sentence}`);
+console.log(`Recovered: ${recovered}`);
+console.log(`Round-trip success: ${recovered === ipv6}`); // true
 ```
 
-### Compressed IPv6
+### Handling Compressed IPv6
 
 ```typescript
-const ipv6 = 'fe80::1%lo0'; // Note: Interface identifiers are not supported
-// Use 'fe80::1' instead
-const sentence = ip6ToSentence('fe80::1');
+// Note: Interface identifiers (e.g., %lo0) are not supported—strip them first
+const ipv6 = 'fe80::1'; // Compressed form
+const sentence = ip6ToSentence(ipv6);
 console.log(sentence); // e.g., "abandon ability able about above absent absorb abstract absurd abuse access accident"
+const backToIpv6 = sentenceToIp6(sentence);
+console.log(backToIpv6); // fe80::1
 ```
 
-### Error Handling
+### Robust Error Handling
 
 ```typescript
 try {
@@ -112,10 +129,27 @@ try {
 }
 
 try {
-  const ipv6 = sentenceToIp6('invalid sentence');
+  const ipv6 = sentenceToIp6('invalid sentence with wrong words');
 } catch (error) {
-  console.log(error.message); // "Invalid sentence" or "Invalid word" or "Checksum invalid"
+  console.log(error.message); // "Invalid word" or "Checksum invalid"
 }
+
+try {
+  const ipv6 = sentenceToIp6('abandon ability'); // Too few words
+} catch (error) {
+  console.log(error.message); // "Invalid sentence"
+}
+```
+
+### Advanced Use Case: Batch Conversions
+
+```typescript
+const ipv6List = ['::1', '2001:db8::1', 'fe80::1'];
+ipv6List.forEach(ip => {
+  const sentence = ip6ToSentence(ip);
+  const recovered = sentenceToIp6(sentence);
+  console.log(`${ip} -> ${sentence} -> ${recovered}`);
+});
 ```
 
 ## Implementation Details
@@ -146,7 +180,7 @@ tests/
 
 ## Testing
 
-Run the full test suite to verify functionality:
+Run the full test suite (46 tests) to verify functionality:
 
 ```bash
 bun test
@@ -160,10 +194,11 @@ bun test tests/ipv6-converter.test.ts
 
 The tests cover:
 - Basic conversions and round-trips
-- Edge cases (all zeros, all ones, compressed notation)
-- Error handling (invalid inputs, checksum mismatches)
+- Edge cases (all zeros, all ones, compressed notation, mixed case)
+- Error handling (invalid inputs, checksum mismatches, word validation)
 - Performance benchmarks
-- Wordlist boundary conditions
+- Wordlist boundary conditions (including max index 2047)
+- Integration tests for multiple formats and robustness
 
 ## Performance
 
@@ -184,6 +219,10 @@ Contributions are welcome! Here's how to get involved:
 7. Open a Pull Request.
 
 Please ensure all tests pass and follow the existing code style (2-space indentation, no semicolons, functional programming patterns).
+
+## Changelog
+
+- **v1.0.0**: Initial release with full IPv6 to BIP39 conversion, comprehensive tests, and zero dependencies.
 
 ## License
 

@@ -40,13 +40,13 @@
    * @param bytes - The byte array
    * @returns The BigInt value
    */
-  function bytesToBigInt(bytes: Uint8Array): bigint {
-    let result = BigInt(0);
-    for (let i = 0; i < bytes.length; i++) {
-      result = (result << 8n) | BigInt(bytes[i]);
-    }
-    return result;
-  }
+   function bytesToBigInt(bytes: Uint8Array): bigint {
+     let result = BigInt(0);
+     for (let i = 0; i < bytes.length; i++) {
+       result = (result << 8n) | BigInt(bytes[i] as number);
+     }
+     return result;
+   }
 
  declare global {
    interface Number {
@@ -133,17 +133,10 @@
        words.push(word);
        entropyWithChecksum >>= 11n;
      }
-     return words.reverse();
-  }
-       words.push(word);
-       entropyWithChecksum >>= 11n;
-     }
-     return words.reverse();
-  }
-     return words.reverse();
-  }
+      return words.reverse();
+   }
 
- // Helper function to capitalize the first letter
+  // Helper function to capitalize the first letter
  const capitalize = (str: string): string => (str && str.length > 0) ? str.charAt(0).toUpperCase() + str.slice(1) : str;
 
   /**
